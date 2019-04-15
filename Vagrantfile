@@ -24,27 +24,35 @@ UserKnownHostsFile /dev/null
 EOF
 # install expect,wget,lrzsz
 sudo yum install expect -y
-sudo yum install wget -y
-sudo yum install lrzsz -y
+
 
 
 #---env---
 cat >> /root/.bashrc <<EOF
-export JAVA_HOME=/home/vagrant/jdk
-
 export HADOOP_HOME=/home/vagrant/hadoop
-export PATH=$PATH:$HADOOP_HOME/bin/:$HADOOP_HOME/sbin:$JAVA_HOME/bin
-export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export JAVA_HOME=/home/vagrant/jdk
+export PATH=/usr/local/sbin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin:/bin/:/sbin:/bin:/home/vagrant/hadoop/bin/:/home/vagrant/hadoop/sbin:/home/vagrant/jdk/bin
+export HADOOP_CONF_DIR=/home/vagrant/hadoop/etc/hadoop
 alias ll='ls -al'
+alias hjs='hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-2.8.5.jar'
+alias hput='hadoop dfs -copyFromLocal'
+alias hls='hadoop dfs -ls'
+alias hrm='hadoop dfs -rm'
+alias hcat='hadoop dfs -cat'
 EOF
 source /root/.bashrc
 
 cat >> .bashrc <<EOF
 export HADOOP_HOME=/home/vagrant/hadoop
 export JAVA_HOME=/home/vagrant/jdk
-export PATH=$PATH:$HADOOP_HOME/bin/:$HADOOP_HOME/sbin:$JAVA_HOME/bin
-export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export PATH=/usr/local/sbin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin:/bin/:/sbin:/bin:/home/vagrant/hadoop/bin/:/home/vagrant/hadoop/sbin:/home/vagrant/jdk/bin
+export HADOOP_CONF_DIR=/home/vagrant/hadoop/etc/hadoop
 alias ll='ls -al'
+alias hjs='hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-2.8.5.jar'
+alias hput='hadoop dfs -copyFromLocal'
+alias hls='hadoop dfs -ls'
+alias hrm='hadoop dfs -rm'
+alias hcat='hadoop dfs -cat'
 EOF
 source .bashrc
 
@@ -58,7 +66,12 @@ sudo mkdir -p $HADOOP_HOME/hadoop/data/namenode
 sudo mkdir -p $HADOOP_HOME/hadoop/tmp
 sudo chown -R vagrant hadoop
 cp $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.8.5.jar ./
+cp  $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-* ~/test
+mv ~/test/hadoop-streaming-2.8.5.jar hadoop-stream.jar
 
+tar -zxvf Shakespeare.tar.gz
+cat ~/data/* > ~/test/largefile
+chmod 0755 ~/test/*.py
 
 
 #---jdk---
@@ -90,7 +103,7 @@ Vagrant.configure("2") do |config|
 		# 设置虚拟机的主机名
 		node.vm.hostname="node#{i}"
 		# 设置虚拟机的IP
-		node.vm.network "private_network", ip: "192.168.33.#{100+i}"
+		node.vm.network "public_network", ip: "192.168.33.#{100+i}"
 
 		# 设置主机与虚拟机的共享目录
 		#node.vm.synced_folder "~/Desktop/share", "/home/vagrant/share"
@@ -100,6 +113,7 @@ Vagrant.configure("2") do |config|
 		config.vm.provision "file", source: "./sshd_config", destination: "/home/vagrant/sshd_config"
 		config.vm.provision "file", source: "./host_ip.txt", destination: "/home/vagrant/host_ip.txt"
 		config.vm.provision "file", source: "./ip.txt", destination: "/home/vagrant/ip.txt"
+		config.vm.provision "file", source: "./Shakespeare.tar.gz", destination: "/home/vagrant/Shakespeare.tar.gz"
 		config.vm.provision "file", source: "./pssh-2.3.1.tar.gz", destination: "/home/vagrant/pssh-2.3.1.tar.gz"
 		config.vm.provision "file", source: "./ssh_ip.sh", destination: "/home/vagrant/ssh_ip.sh"
 		config.vm.provision "file", source: "./env", destination: "/home/vagrant/env"
@@ -110,7 +124,7 @@ Vagrant.configure("2") do |config|
 			# 设置虚拟机的名称
 			v.name = "node#{i}"
 			# 设置虚拟机的内存大小  
-			v.memory = 2048
+			v.memory = 1024
 			# 设置虚拟机的CPU个数
 			v.cpus = 1
 		end
